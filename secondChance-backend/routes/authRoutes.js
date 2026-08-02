@@ -5,23 +5,28 @@ const jwt = require('jsonwebtoken');
 const connectToDatabase = require('../models/db');
 const logger = require('../logger');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'setasecret';
+const JWT_SECRET = process.env.JWT_SECRET || 'secret_key';
 
-// 1. Register Route
 router.post('/register', async (req, res) => {
     try {
+        // Task 1: Connect to `secondChance` in MongoDB through `connectToDatabase` in `db.js`.
         const db = await connectToDatabase();
+
+        // Task 2: Access MongoDB `users` collection
         const collection = db.collection("users");
 
+        // Task 3: Check if user credentials already exists in the database and throw an error if they do
         const existingEmail = await collection.findOne({ email: req.body.email });
         if (existingEmail) {
             logger.error('Email id already exists');
             return res.status(400).json({ error: 'Email id already exists' });
         }
 
+        // Task 4: Create a hash to encrypt the password so that it is not readable in the database
         const salt = await bcryptjs.genSalt(10);
         const hash = await bcryptjs.hash(req.body.password, salt);
 
+        // Task 5: Insert the user into the database
         const newUser = await collection.insertOne({
             email: req.body.email,
             firstName: req.body.firstName,
@@ -30,6 +35,7 @@ router.post('/register', async (req, res) => {
             createdAt: new Date(),
         });
 
+        // Task 6: Create JWT authentication if passwords match with user._id as payload
         const payload = {
             user: {
                 id: newUser.insertedId,
@@ -37,52 +43,17 @@ router.post('/register', async (req, res) => {
         };
         const authtoken = jwt.sign(payload, JWT_SECRET);
 
+        // Task 7: Log the successful registration using the logger
         logger.info('User registered successfully');
 
+        // Task 8: Return the user email and the token as a JSON
         const email = req.body.email;
         return res.json({ authtoken, email });
 
     } catch (e) {
-        logger.error(`Error during registration: ${e.message}`);
+        logger.error(`Internal server error: ${e}`);
         return res.status(500).send('Internal server error');
     }
 });
-
-// 2. Login Route
-router.post('/login', async (req, res) => {
-    try {
-        const db = await connectToDatabase();
-        const collection = db.collection("users");
-
-        const user = await collection.findOne({ email: req.body.email });
-        if (!user) {
-            logger.error('User not found');
-            return res.status(400).json({ error: 'Invalid Credentials' });
-        }
-
-        const isMatch = await bcryptjs.compare(req.body.password, user.password);
-        if (!isMatch) {
-            logger.error('Invalid password');
-            return res.status(400).json({ error: 'Invalid Credentials' });
-        }
-
-        const payload = {
-            user: {
-                id: user._id,
-            },
-        };
-        const authtoken = jwt.sign(payload, JWT_SECRET);
-        const userName = user.firstName;
-        const userEmail = user.email;
-
-        logger.info('User logged in successfully');
-        return res.json({ authtoken, userName, userEmail });
-
-    } catch (e) {
-        logger.error(`Error during login: ${e.message}`);
-        return res.status(500).send('Internal server error');
-    }
-});
-
 
 module.exports = router;
