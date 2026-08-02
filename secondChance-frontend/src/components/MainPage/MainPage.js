@@ -1,23 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {urlConfig} from '../../config';
+import { urlConfig } from '../../config';
 import { useAppContext } from '../../context/AppContext';
 
 function MainPage() {
-    const [items, setItems] = useState([])
+    const [items, setItems] = useState([]);
     const navigate = useNavigate();
     const { isLoggedIn } = useAppContext();
-
 
     useEffect(() => {
         // fetch all items
         const fetchItems = async () => {
             try {
-                let url = `${urlConfig.backendUrl}/api/secondchance/items`
+                let url = `${urlConfig.backendUrl}/api/secondchance/items`;
                 const response = await fetch(url);
                 if (!response.ok) {
-                    //something went wrong
-                    throw new Error(`HTTP error; ${response.status}`)
+                    throw new Error(`HTTP error; status: ${response.status}`);
                 }
                 const data = await response.json();
                 setItems(data);
@@ -38,6 +36,7 @@ function MainPage() {
     };
 
     const formatDate = (timestamp) => {
+        if (!timestamp) return '';
         const date = new Date(timestamp * 1000);
         return date.toLocaleString('default', { month: 'long', day: 'numeric', year: 'numeric' });
     };
@@ -46,40 +45,63 @@ function MainPage() {
         return condition === "New" ? "list-group-item-success" : "list-group-item-warning";
     };
 
+    // دالة مساعدة لبناء رابط الصورة الصحيح
+    const getImageUrl = (imagePath) => {
+        if (!imagePath) return '';
+        if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+            return imagePath;
+        }
+        const cleanPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+        return `${urlConfig.backendUrl}${cleanPath}`;
+    };
+
     return (
         <div className="container mt-5">
-            {isLoggedIn ? (
-              <button onClick={handleAddItem}>Add Item</button>
-            ) : (
-                null
+            {isLoggedIn && (
+                <div className="mb-3">
+                    <button className="btn btn-success" onClick={handleAddItem}>Add Item</button>
+                </div>
             )}
-        <div className="row">
-                {items.map((item) => (
-                    <div key={item.id} className="col-md-4 mb-4">
-                        <div className="card product-card">
-                            <div className="image-placeholder">
-                                {item.image ? (
-                                    <img src={urlConfig.backendUrl+item.image} alt={item.name} />                                ) : (
-                                    <div className="no-image-available">No Image Available</div>
-                                )}
-                            </div>
-                            <div className="card-body">
-                                <h5 className="card-title">{item.name}</h5>
-                                <p className={`card-text ${getConditionClass(item.condition)}`}>
-                                    {item.condition}
-                                </p>
-                                <p className="card-text date-added">
-                                    {formatDate(item.date_added)}
-                                </p>
-                            </div>
-                            <div className="card-footer">
-                                <button onClick={() => goToDetailsPage(item.id)} className="btn btn-primary w-100">
-                                    View Details
-                                </button>
+            <div className="row">
+                {items.map((item) => {
+                    const itemId = item._id || item.id;
+                    return (
+                        <div key={itemId} className="col-md-4 mb-4">
+                            <div className="card product-card">
+                                <div className="image-placeholder">
+                                    {item.image ? (
+                                        <img 
+                                            src={getImageUrl(item.image)} 
+                                            alt={item.name} 
+                                            className="card-img-top"
+                                            onError={(e) => {
+                                                // في حال فشل تحميل الصورة يتم استبدالها بنص أو صورة افتراضية
+                                                e.target.onerror = null; 
+                                                e.target.style.display = 'none';
+                                            }}
+                                        />
+                                    ) : (
+                                        <div className="no-image-available">No Image Available</div>
+                                    )}
+                                </div>
+                                <div className="card-body">
+                                    <h5 className="card-title">{item.name}</h5>
+                                    <p className={`card-text ${getConditionClass(item.condition)}`}>
+                                        {item.condition}
+                                    </p>
+                                    <p className="card-text date-added">
+                                        {formatDate(item.date_added)}
+                                    </p>
+                                </div>
+                                <div className="card-footer">
+                                    <button onClick={() => goToDetailsPage(itemId)} className="btn btn-primary w-100">
+                                        View Details
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         </div>
     );

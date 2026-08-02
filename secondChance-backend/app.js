@@ -2,6 +2,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const path = require('path'); // 1️⃣ تم إضافة مكتبة path
 const pinoLogger = require('./logger');
 
 const connectToDatabase = require('./models/db');
@@ -18,6 +19,11 @@ connectToDatabase().then(() => {
 .catch((e) => console.error('Failed to connect to DB', e));
 
 app.use(express.json());
+
+// 2️⃣ تفعيل خدمة الملفات والصور الاستاتيكية
+app.use(express.static('public'));
+app.use('/public', express.static(path.join(__dirname, 'public')));
+app.use('/images', express.static(path.join(__dirname, 'public/images')));
 
 // Route files
 
