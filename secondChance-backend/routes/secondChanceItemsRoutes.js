@@ -1,3 +1,4 @@
+/*jshint esversion: 8 */
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
@@ -25,9 +26,9 @@ const upload = multer({ storage: storage });
 router.get('/', async (req, res, next) => {
     logger.info('/ called');
     try {
-        // Step 2: Connect to MongoDB and fetch items
         const db = await connectToDatabase();
-        const collection = db.collection("secondChanceItems");
+        // تم الاعتماد على مجموعة "gifts" لقراءة المنتجات المستوردة بنجاح
+        const collection = db.collection("gifts");
         const secondChanceItems = await collection.find({}).toArray();
         res.json(secondChanceItems);
     } catch (e) {
@@ -39,9 +40,8 @@ router.get('/', async (req, res, next) => {
 // Add a new item
 router.post('/', upload.single('file'), async (req, res, next) => {
     try {
-        // Step 3: Add new item to database
         const db = await connectToDatabase();
-        const collection = db.collection("secondChanceItems");
+        const collection = db.collection("gifts");
 
         let secondChanceItem = req.body;
         
@@ -71,9 +71,8 @@ router.post('/', upload.single('file'), async (req, res, next) => {
 // Get a single secondChanceItem by ID
 router.get('/:id', async (req, res, next) => {
     try {
-        // Step 4: Fetch single item by ID
         const db = await connectToDatabase();
-        const collection = db.collection("secondChanceItems");
+        const collection = db.collection("gifts");
         const id = req.params.id;
 
         const secondChanceItem = await collection.findOne({ id: id });
@@ -92,9 +91,8 @@ router.get('/:id', async (req, res, next) => {
 // Update an existing item
 router.put('/:id', async (req, res, next) => {
     try {
-        // Step 5: Update item by ID
         const db = await connectToDatabase();
-        const collection = db.collection("secondChanceItems");
+        const collection = db.collection("gifts");
         const id = req.params.id;
 
         const secondChanceItem = await collection.findOne({ id: id });
@@ -125,9 +123,8 @@ router.put('/:id', async (req, res, next) => {
 // Delete an existing item
 router.delete('/:id', async (req, res, next) => {
     try {
-        // Step 6: Delete item by ID
         const db = await connectToDatabase();
-        const collection = db.collection("secondChanceItems");
+        const collection = db.collection("gifts");
         const id = req.params.id;
 
         const secondChanceItem = await collection.findOne({ id: id });
