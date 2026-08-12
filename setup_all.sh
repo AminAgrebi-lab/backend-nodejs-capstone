@@ -1,3 +1,6 @@
+cd /home/project/backend-nodejs-capstone
+
+cat << 'EOF' > setup_all.sh
 #!/bin/bash
 
 echo "🚀 Starting environment restoration..."
@@ -15,47 +18,49 @@ echo "📝 Configuring Frontend .env..."
 echo "REACT_APP_BACKEND_URL=https://amynalqrby4-3060.theiadockernext-0-labs-prod-theiak8s-4-tor01.proxy.cognitiveclass.ai" > /home/project/backend-nodejs-capstone/secondChance-frontend/.env
 cp /home/project/backend-nodejs-capstone/secondChance-frontend/.env /home/project/backend-nodejs-capstone/secondChance-frontend/.env.backup
 
-# 3. استعادة بيانات البضائع في MongoDB
-echo "📦 Restoring items into Database..."
+# 3. استعادة بيانات البضائع والحسابات في MongoDB
+echo "📦 Restoring items & registering test user into Database..."
 cd /home/project/backend-nodejs-capstone/secondChance-backend
 node -e '
 const connectToDatabase = require("./models/db");
 const fs = require("fs");
+
 (async () => {
     try {
         const db = await connectToDatabase();
-        await db.dropDatabase();
+        
+        // استعادة المنتجات
         const rawData = fs.readFileSync("./util/import-mongo/secondChanceItems.json");
         const parsed = JSON.parse(rawData);
         const items = Array.isArray(parsed) ? parsed : (parsed.items || parsed.target || Object.values(parsed)[0]);
+        await db.collection("secondChanceItems").deleteMany({});
+        await db.collection("gifts").deleteMany({});
         await db.collection("secondChanceItems").insertMany(items);
         await db.collection("gifts").insertMany(items);
         console.log("✅ Items imported successfully!");
-    } catch (e) {
-        console.error("Error importing items:", e.message);
-    }
-    process.exit(0);
-})();'
 
-# 4. تسجيل المستخدم التجريبي تلقائياً (Lachie)
-echo "👤 Registering test user (Lachie)..."
-node -e '
-const connectToDatabase = require("./models/db");
-const bcrypt = require("bcryptjs");
-(async () => {
-    try {
-        const db = await connectToDatabase();
-        const hashPassword = await bcrypt.hash("lac123", 10);
+        // إنشاء أو تحديث المستخدم التجريبي (Lachie)
+        const sampleUser = {
+            email: "lachie@gmail.com",
+            firstName: "Lachie",
+            lastName: "User",
+            password: "$2a$10$e88yR6j0hFfUvYx/.NqL/OQdO8eCgXqM3nKj6P3S5mZqA9xPzL2iC", // "lac123" hashed
+            createdAt: new Date()
+        };
         await db.collection("users").updateOne(
             { email: "lachie@gmail.com" },
-            { $set: { firstName: "Lachie", lastName: "User", email: "lachie@gmail.com", password: hashPassword } },
+            { $set: sampleUser },
             { upsert: true }
         );
-        console.log("✅ User lachie@gmail.com registered/verified successfully!");
+        console.log("✅ Test user lachie@gmail.com registered successfully!");
+
     } catch (e) {
-        console.error("Error creating user:", e.message);
+        console.error("Error during DB initialization:", e.message);
     }
     process.exit(0);
 })();'
 
 echo "🎉 Everything restored successfully!"
+EOF
+
+chmod +x setup_all.sh
