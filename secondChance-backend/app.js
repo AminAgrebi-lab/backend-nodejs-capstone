@@ -2,17 +2,23 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const path = require('path'); // 1️⃣ تم إضافة مكتبة path
+const path = require('path');
 const pinoLogger = require('./logger');
 
 const connectToDatabase = require('./models/db');
-const { loadData } = require("./util/import-mongo/index");
 
 const app = express();
-app.use("*", cors());
-const port = 3060;
 
-// Connect to MongoDB; we just do this one time
+// 1️⃣ إعداد CORS بشكل شامل يسمح لجميع المصادر والـ Headers
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+const port = process.env.PORT || 3060;
+
+// Connect to MongoDB
 connectToDatabase().then(() => {
     pinoLogger.info('Connected to DB');
 })
@@ -26,14 +32,8 @@ app.use('/public', express.static(path.join(__dirname, 'public')));
 app.use('/images', express.static(path.join(__dirname, 'public/images')));
 
 // Route files
-
-// authRoutes Step 2: import the authRoutes
 const authRoutes = require('./routes/authRoutes');
-
-// Items API Task 1: import the secondChanceItemsRoutes
 const secondChanceItemsRoutes = require('./routes/secondChanceItemsRoutes');
-
-// Search API Task 1: import the searchRoutes and store in a constant called searchRoutes
 const searchRoutes = require('./routes/searchRoutes');
 
 const pinoHttp = require('pino-http');
@@ -42,19 +42,18 @@ const logger = require('./logger');
 app.use(pinoHttp({ logger }));
 
 // Use Routes
-// authRoutes Step 2: add the authRoutes to the server
 app.use('/api/auth', authRoutes);
 
-// Items API Task 2: add the secondChanceItemsRoutes to the server
+// ربط مسار المنتجات بالمسارين الممكنين لضمان عدم حدوث 404
 app.use('/api/secondchance/items', secondChanceItemsRoutes);
+app.use('/api/gifts', secondChanceItemsRoutes); 
 
-// Search API Task 2: add the searchRoutes to the server by using the app.use() method
 app.use('/api/secondchance/search', searchRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {
-    console.error(err);
-    res.status(500).send('Internal Server Error');
+    console.error("Global Error Handler caught:", err);
+    res.status(500).json({ error: 'Internal Server Error', message: err.message });
 });
 
 app.get("/", (req, res) => {

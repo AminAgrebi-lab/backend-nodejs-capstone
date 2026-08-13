@@ -3,6 +3,7 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { ObjectId } = require('mongodb'); // 1️⃣ استدعاء ObjectId من مكتبة MongoDB
 const router = express.Router();
 const connectToDatabase = require('../models/db');
 const logger = require('../logger');
@@ -13,10 +14,10 @@ const directoryPath = 'public/images';
 // Set up storage for uploaded files
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, directoryPath); // Specify the upload directory
+    cb(null, directoryPath);
   },
   filename: function (req, file, cb) {
-    cb(null, file.originalname); // Use the original file name
+    cb(null, file.originalname);
   },
 });
 
@@ -27,7 +28,6 @@ router.get('/', async (req, res, next) => {
     logger.info('/ called');
     try {
         const db = await connectToDatabase();
-        // تم الاعتماد على مجموعة "gifts" لقراءة المنتجات المستوردة بنجاح
         const collection = db.collection("gifts");
         const secondChanceItems = await collection.find({}).toArray();
         res.json(secondChanceItems);
@@ -73,12 +73,26 @@ router.get('/:id', async (req, res, next) => {
     try {
         const db = await connectToDatabase();
         const collection = db.collection("gifts");
-        const id = req.params.id;
+        const idParam = req.params.id;
 
-        const secondChanceItem = await collection.findOne({ id: id });
+        // تجهيز مصفوفة البحث لتشمل id العادي، و ObjectId الخاص بـ MongoDB
+        const queryConditions = [
+            { id: idParam },
+            { id: parseInt(idParam) || -1 },
+            { _id: idParam }
+        ];
+
+        if (ObjectId.isValid(idParam)) {
+            queryConditions.push({ _id: new ObjectId(idParam) });
+        }
+
+        const secondChanceItem = await collection.findOne({
+            $or: queryConditions
+        });
 
         if (!secondChanceItem) {
-            return res.status(404).send("Item not found");
+            logger.error(`Item not found for id: ${idParam}`);
+            return res.status(404).json({ error: "Item not found" });
         }
 
         res.json(secondChanceItem);
@@ -93,13 +107,25 @@ router.put('/:id', async (req, res, next) => {
     try {
         const db = await connectToDatabase();
         const collection = db.collection("gifts");
-        const id = req.params.id;
+        const idParam = req.params.id;
 
-        const secondChanceItem = await collection.findOne({ id: id });
+        const queryConditions = [
+            { id: idParam },
+            { id: parseInt(idParam) || -1 },
+            { _id: idParam }
+        ];
+
+        if (ObjectId.isValid(idParam)) {
+            queryConditions.push({ _id: new ObjectId(idParam) });
+        }
+
+        const secondChanceItem = await collection.findOne({
+            $or: queryConditions
+        });
 
         if (!secondChanceItem) {
             logger.error('Item not found for update');
-            return res.status(404).send("Item not found");
+            return res.status(404).json({ error: "Item not found" });
         }
 
         secondChanceItem.category = req.body.category || secondChanceItem.category;
@@ -109,7 +135,7 @@ router.put('/:id', async (req, res, next) => {
         secondChanceItem.age_years = Number((secondChanceItem.age_days / 365).toFixed(1));
 
         const updateResult = await collection.updateOne(
-            { id: id },
+            { _id: secondChanceItem._id },
             { $set: secondChanceItem }
         );
 
@@ -125,16 +151,28 @@ router.delete('/:id', async (req, res, next) => {
     try {
         const db = await connectToDatabase();
         const collection = db.collection("gifts");
-        const id = req.params.id;
+        const idParam = req.params.id;
 
-        const secondChanceItem = await collection.findOne({ id: id });
+        const queryConditions = [
+            { id: idParam },
+            { id: parseInt(idParam) || -1 },
+            { _id: idParam }
+        ];
+
+        if (ObjectId.isValid(idParam)) {
+            queryConditions.push({ _id: new ObjectId(idParam) });
+        }
+
+        const secondChanceItem = await collection.findOne({
+            $or: queryConditions
+        });
 
         if (!secondChanceItem) {
             logger.error('Item not found for deletion');
-            return res.status(404).send("Item not found");
+            return res.status(404).json({ error: "Item not found" });
         }
 
-        await collection.deleteOne({ id: id });
+        await collection.deleteOne({ _id: secondChanceItem._id });
         res.json({ status: "deleted" });
     } catch (e) {
         logger.error('Error deleting item', e);

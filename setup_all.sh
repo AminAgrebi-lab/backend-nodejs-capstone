@@ -1,6 +1,3 @@
-cd /home/project/backend-nodejs-capstone
-
-cat << 'EOF' > setup_all.sh
 #!/bin/bash
 
 echo "🚀 Starting environment restoration..."
@@ -8,7 +5,7 @@ echo "🚀 Starting environment restoration..."
 # 1. إعداد ملف .env للـ Backend
 echo "📝 Configuring Backend .env..."
 cat << 'EON' > /home/project/backend-nodejs-capstone/secondChance-backend/.env
-MONGO_URL=mongodb://root:nGovdz3rmMEM6yqnE123Uo5D@172.21.140.13:27017
+MONGO_URL=mongodb://root:8dBn1H1r0wUMVLnbQYl6OtlG@172.21.73.132:27017
 MONGO_DB_NAME=secondChance
 JWT_SECRET=secret_key
 EON
@@ -61,6 +58,3 @@ const fs = require("fs");
 })();'
 
 echo "🎉 Everything restored successfully!"
-EOF
-
-chmod +x setup_all.sh
