@@ -2,6 +2,7 @@
 const express = require('express')
 const multer = require('multer')
 const router = express.Router()
+const { ObjectId } = require('mongodb')
 const connectToDatabase = require('../models/db')
 const logger = require('../logger')
 
@@ -59,14 +60,26 @@ router.post('/', upload.single('file'), async (req, res, next) => {
   }
 })
 
-// Get a single secondChance item by ID
+// Get a single secondChance item by ID (supports both custom id and MongoDB _id)
 router.get('/:id', async (req, res, next) => {
   try {
     const db = await connectToDatabase()
     const collection = db.collection('secondChanceItems')
     const id = req.params.id
 
-    const secondChanceItem = await collection.findOne({ id })
+    const queryConditions = [
+      { id: id },
+      { id: parseInt(id) },
+      { id: String(id) }
+    ]
+
+    if (ObjectId.isValid(id)) {
+      queryConditions.push({ _id: new ObjectId(id) })
+    }
+
+    const secondChanceItem = await collection.findOne({
+      $or: queryConditions
+    })
 
     if (!secondChanceItem) {
       return res.status(404).send('secondChanceItem not found')
@@ -86,22 +99,32 @@ router.put('/:id', async (req, res, next) => {
     const collection = db.collection('secondChanceItems')
     const id = req.params.id
 
-    const secondChanceItem = await collection.findOne({ id })
+    const queryConditions = [{ id: id }, { id: parseInt(id) }]
+    if (ObjectId.isValid(id)) {
+      queryConditions.push({ _id: new ObjectId(id) })
+    }
+
+    const secondChanceItem = await collection.findOne({ $or: queryConditions })
 
     if (!secondChanceItem) {
       return res.status(404).send('secondChanceItem not found')
     }
 
-    secondChanceItem.category = req.body.category
-    secondChanceItem.condition = req.body.condition
-    secondChanceItem.ageDays = req.body.ageDays
-    secondChanceItem.description = req.body.description
-    secondChanceItem.ageYears = req.body.ageYears
-    secondChanceItem.updatedAt = new Date()
+    const updatedItem = {
+      $set: {
+        category: req.body.category,
+        condition: req.body.condition,
+        ageDays: req.body.ageDays,
+        description: req.body.description,
+        ageYears: req.body.ageYears,
+        updatedAt: new Date()
+      }
+    }
 
-    const updateResult = await collection.save(secondChanceItem)
+    const filter = ObjectId.isValid(id) ? { _id: new ObjectId(id) } : { id: id }
+    const updateResult = await collection.updateOne(filter, updatedItem)
 
-    if (updateResult) {
+    if (updateResult.modifiedCount > 0 || updateResult.matchedCount > 0) {
       res.json({ status: 'success' })
     } else {
       res.status(400).send('Failed to update')
@@ -119,13 +142,19 @@ router.delete('/:id', async (req, res, next) => {
     const collection = db.collection('secondChanceItems')
     const id = req.params.id
 
-    const secondChanceItem = await collection.findOne({ id })
+    const queryConditions = [{ id: id }, { id: parseInt(id) }]
+    if (ObjectId.isValid(id)) {
+      queryConditions.push({ _id: new ObjectId(id) })
+    }
+
+    const secondChanceItem = await collection.findOne({ $or: queryConditions })
 
     if (!secondChanceItem) {
       return res.status(404).send('secondChanceItem not found')
     }
 
-    await collection.deleteOne({ id })
+    const filter = ObjectId.isValid(id) ? { _id: new ObjectId(id) } : { id: id }
+    await collection.deleteOne(filter)
     res.json({ status: 'success' })
   } catch (e) {
     logger.error('oops something went wrong', e)

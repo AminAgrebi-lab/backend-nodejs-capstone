@@ -50,7 +50,9 @@ const logger = require('./logger')
 app.use(pinoHttp({ logger }))
 
 app.use('/api/auth', authRoutes)
+// تم إضافة المسارات بكافة الأشكال لضمان توافق الفرونت إند
 app.use('/api/secondchance/items', secondChanceItemsRoutes)
+app.use('/api/secondChance/items', secondChanceItemsRoutes)
 app.use('/api/gifts', secondChanceItemsRoutes)
 app.use('/api/secondchance/search', searchRoutes)
 
