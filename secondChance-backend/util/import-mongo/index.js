@@ -1,46 +1,50 @@
-require('dotenv').config()
-const MongoClient = require('mongodb').MongoClient
-const path = require('path')
-const fs = require('fs')
+const { MongoClient } = require('mongodb');
+const fs = require('fs');
+const path = require('path');
 
-// MongoDB connection URL
-const url = process.env.MONGO_URL
-const filename = path.join(__dirname, 'secondChanceItems.json')
-const dbName = 'secondChance'
-const collectionName = 'secondChanceItems'
+const url = process.env.MONGO_URL || 'mongodb://localhost:27017';
+const dbName = process.env.MONGO_DB || 'secondChance';
+const collectionName = process.env.MONGO_COLLECTION || 'secondChanceItems';
 
-// insert seed data
-const sampleData = JSON.parse(fs.readFileSync(filename, 'utf8'))
-
-async function loadData () {
-  const client = new MongoClient(url)
-
+async function loadData() {
+  const client = new MongoClient(url);
   try {
-    // Connect to the MongoDB server
-    await client.connect()
-    console.log('Connected successfully to server')
+    await client.connect();
+    console.log('Connected successfully to server');
+    
+    const db = client.db(dbName);
+    const collection = db.collection(collectionName);
 
-    // database and collection instances
-    const db = client.db(dbName)
-    const collection = db.collection(collectionName)
+    // قراءة ملف JSON
+    const filePath = path.join(__dirname, 'secondChanceItems.json');
+    const rawData = fs.readFileSync(filePath, 'utf8');
+    const parsedData = JSON.parse(rawData);
 
-    // check if collection already exists
-    const cursor = collection.find({})
-    const documents = await cursor.toArray()
-
-    if (documents.length === 0) {
-      // insert sample data
-      const insertResult = await collection.insertMany(sampleData)
-      console.log('Inserted documents:', insertResult.insertedCount)
-    } else {
-      console.log('Items already exists in DB')
+    // التحقق من أن البيانات مصفوفة، وإذا كانت كائناً نستخرج المصفوفة من داخله
+    let itemsToInsert = [];
+    if (Array.isArray(parsedData)) {
+      itemsToInsert = parsedData;
+    } else if (typeof parsedData === 'object' && parsedData !== null) {
+      const possibleArray = parsedData.secondChanceItems || parsedData.items || Object.values(parsedData)[0];
+      if (Array.isArray(possibleArray)) {
+        itemsToInsert = possibleArray;
+      } else {
+        itemsToInsert = [parsedData];
+      }
     }
+
+    if (itemsToInsert.length === 0) {
+      console.log('No items found to insert.');
+      return;
+    }
+
+    const insertResult = await collection.insertMany(itemsToInsert);
+    console.log(`${insertResult.insertedCount} documents were inserted successfully!`);
   } catch (err) {
-    console.error('Error inserting documents:', err)
+    console.error('Error inserting documents:', err);
   } finally {
-    // Close the client connection
-    await client.close()
+    await client.close();
   }
 }
 
-loadData()
+loadData();
