@@ -1,2 +1,3 @@
-curl -X POST "http://localhost:3060/api/auth/register" -H "Content-Type: application/json" -d '{"email":"user123@example.com","firstName":"John","lastName":"Doe","password":"password123"}'
-{"authtoken":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjoiNmE2Zjg1NWIyZjUyYjdlNWI2ZmFjYWMxIn0sImlhdCI6MTc4NTY5MzUzMX0.XBTQOjBpwKrvLE86qB3szh31dIJ0I7FXTOYcqeIYiJU","email":"user456@example.com"}
+curl -X POST -H "Content-Type: application/json" -d '{"name":"Amin","email":"amin@test.com","password":"password123"}' https://amynalqrby4-3060.theiadockernext-0-labs-prod-theiak8s-4-tor01.proxy.cognitiveclass.ai/api/auth/register
+
+{"authtoken":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjoiNmE3ZjU5Y2FkYTJhMWU1ZTg5YWRhMWRkIn0sImlhdCI6MTc4NjczMDk1NH0.WgwU2M4i7kEwwRps63fDbLp4CFaQ8WSu8xZrGK-VUds","email":"amin@test.com"}

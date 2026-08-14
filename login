@@ -1,0 +1,3 @@
+curl -X POST -H "Content-Type: application/json" -d '{"email":"amin@test.com","password":"password123"}' https://amynalqrby4-3060.theiadockernext-0-labs-prod-theiak8s-4-tor01.proxy.cognitiveclass.ai/api/auth/login
+
+{"authtoken":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjoiNmE3ZjU5Y2FkYTJhMWU1ZTg5YWRhMWRkIn0sImlhdCI6MTc4NjczMTM3MX0.b2_LoN5b3t1ntdM9mk9LQ5hhOX-UuqSDcI_AbY8_TIE","userName":"Amin","userEmail":"amin@test.com"}
