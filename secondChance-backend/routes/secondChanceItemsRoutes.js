@@ -68,7 +68,7 @@ router.get('/:id', async (req, res, next) => {
     const id = req.params.id
 
     const queryConditions = [
-      { id: id },
+      { id },
       { id: parseInt(id) },
       { id: String(id) }
     ]
@@ -99,7 +99,7 @@ router.put('/:id', async (req, res, next) => {
     const collection = db.collection('secondChanceItems')
     const id = req.params.id
 
-    const queryConditions = [{ id: id }, { id: parseInt(id) }]
+    const queryConditions = [{ id }, { id: parseInt(id) }]
     if (ObjectId.isValid(id)) {
       queryConditions.push({ _id: new ObjectId(id) })
     }
@@ -121,7 +121,7 @@ router.put('/:id', async (req, res, next) => {
       }
     }
 
-    const filter = ObjectId.isValid(id) ? { _id: new ObjectId(id) } : { id: id }
+    const filter = ObjectId.isValid(id) ? { _id: new ObjectId(id) } : { id }
     const updateResult = await collection.updateOne(filter, updatedItem)
 
     if (updateResult.modifiedCount > 0 || updateResult.matchedCount > 0) {
@@ -142,7 +142,7 @@ router.delete('/:id', async (req, res, next) => {
     const collection = db.collection('secondChanceItems')
     const id = req.params.id
 
-    const queryConditions = [{ id: id }, { id: parseInt(id) }]
+    const queryConditions = [{ id }, { id: parseInt(id) }]
     if (ObjectId.isValid(id)) {
       queryConditions.push({ _id: new ObjectId(id) })
     }
@@ -153,7 +153,7 @@ router.delete('/:id', async (req, res, next) => {
       return res.status(404).send('secondChanceItem not found')
     }
 
-    const filter = ObjectId.isValid(id) ? { _id: new ObjectId(id) } : { id: id }
+    const filter = ObjectId.isValid(id) ? { _id: new ObjectId(id) } : { id }
     await collection.deleteOne(filter)
     res.json({ status: 'success' })
   } catch (e) {
